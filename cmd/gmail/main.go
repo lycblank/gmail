@@ -42,11 +42,13 @@ func main() {
 	}
 	row := sh.AddRow()
 	row.AddCell().Value = "from"
+	row.AddCell().Value = "to"
 	row.AddCell().Value = "subject"
 	row.AddCell().Value = "email_id"
 
 	bar := progressbar.NewProgressBar(int64(len(r.Messages)))
 	cpuNum := runtime.NumCPU()
+	cpuNum = 1
 	group := sync.WaitGroup{}
 	group.Add(cpuNum)
 
@@ -103,7 +105,10 @@ func GetCSVMessage(message *ggmail.Message) CSVMessage {
 		if message.Payload.Headers[i].Name == "Subject" {
 			msg.Subject = message.Payload.Headers[i].Value
 		}
-		if msg.From != "" && msg.Subject != "" {
+		if message.Payload.Headers[i].Name == "To" {
+			msg.To = message.Payload.Headers[i].Value
+		}
+		if msg.From != "" && msg.Subject != "" && msg.To != "" {
 			break
 		}
 	}
@@ -125,6 +130,7 @@ func AddXLSXRecord(sheet *xlsx.Sheet, msg CSVMessage) {
 	row := sheet.AddRow()
 	sheetMutex.Unlock()
 	row.AddCell().Value = msg.From
+	row.AddCell().Value = msg.To
 	row.AddCell().Value = msg.Subject
 	row.AddCell().Value = msg.EmailId
 }
@@ -140,8 +146,6 @@ func ProcessMessage(svr *ggmail.Service, sheet *xlsx.Sheet, emailId string, bar 
 	csvMsg.EmailId = emailId
 
 	AddXLSXRecord(sheet, csvMsg)
-
-
 }
 
 var processValue int64
@@ -152,6 +156,7 @@ func AddProcessBar(bar *progressbar.ProgressBar, step int64) {
 
 type CSVMessage struct {
 	From string
+	To string
 	Subject string
 	EmailId string
 }
